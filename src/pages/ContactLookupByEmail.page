@@ -1,0 +1,170 @@
+<!-- 
+    Visualforce page that will allow to lookup contacts by Email addresses. Just paste emails
+
+-->
+<apex:page standardStylesheets="false" sidebar="false" showHeader="false" standardController="MailingList__c" extensions="ContactLookupByEmailController">
+
+<head> 
+    <!-- Stylesheets-->
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
+    
+    <!--  JS Libraries for JQuery and BootStrap-->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type='text/javascript'>
+        
+
+
+        $(document).ready(function(){
+            regHandlers(); // Register the handlers
+        });
+
+        // Will Register couple of button handlers for events
+
+        function regHandlers(){
+
+
+            // When a nav tab is clicked / navigated
+
+            $('#contabId').click(function(e){
+                
+                e.preventDefault();
+
+                lookupContacts();
+
+            })
+
+            // When a Next button is clicked
+
+            $('#nextBtnId').click(function(e){
+                
+                e.preventDefault();
+
+                lookupContacts();
+                
+            });
+        }
+
+        // Main method that calls the JS Remoting function and returns back the Contact Details.
+
+        function lookupContacts(){
+
+            var emails = $('#emailAddressesId').val();
+                
+                if(emails == null || emails == ''){
+                    
+                    $('#msgsDiv').remove(); 
+
+                    $('#contactTab').append('<div id="msgsDiv" class="alert alert-warning"><p class="warning">Add Email Addresses and click next</p></div>');
+
+                    $('a[href=#contactTab]').tab('show');
+                    
+
+                }else{
+                    
+                    
+
+                    ContactLookupByEmailController.getContacts(emails,function(result,event){
+                        
+                        $('#conTableId').remove(); // removes the Table 
+
+                        // Build the Dynamic Table
+
+                        var table = $('<table id="conTableId" class="table table-hover">');
+                        
+                        table.append("<thead><tr><th>Email</th><th>Status</th><th>Contact Name</th><th>Number of Contacts</th></thead>");
+                        table.append('<tbody id="tblBodyId"></tbody>');
+                        table.appendTo('#tableDiv')
+                        
+                        // Build the Dynamic rows
+                        $.each(result,function(r){
+                    
+                            var status;
+                            var trow = $('<tr>');
+
+                            trow.append('<td>'+result[r].emailAddress+'</td>');
+                            trow.append('<td>'+result[r].status+'</td>');
+                            
+                            if(result[r].matchedContacts.length == 0){
+        
+                                    trow.addClass('danger'); // Add class for row differences
+                            
+                            }
+                            
+                            if(result[r].matchedContacts.length == 1){
+                                trow.append('<td>'+result[r].matchedContacts[0].Name+'</td>');
+                            }else{
+                                trow.addClass('info');  
+                                trow.append('<td> -- </td>');   
+                            }
+
+                            trow.append('<td id="conRec'+r+'">'+result[r].matchedContacts.length +'</td>');
+
+                            trow.appendTo(table);
+
+                            var htmlToolTip = '';
+
+                            // Add a tooltip to each row so that we can view the contacts on hover
+
+                            $.each(result[r].matchedContacts,function(j){
+
+                                htmlToolTip += '<a target="_blank" href="/'+result[r].matchedContacts[j].Id+'">'+result[r].matchedContacts[j].Name+'</a><br/>';
+
+                            });
+
+
+                            $('#conRec'+r).tooltip({'html':true,'title':htmlToolTip, delay: { show: 200, hide: 700 }});
+
+
+                        });
+                    
+                        $('a[href=#contactTab]').tab('show'); // Show the tab
+                        
+                        $('#msgsDiv').remove();
+
+                    });
+                }
+            
+
+        }
+
+
+    </script>
+    </head>
+    <body>
+        <div class="pbHeader">
+          <div class="container">
+              <p>Add Email Addresses</p>
+          </div>
+        </div>
+        <div class="container">
+            <ul class="nav nav-tabs">
+              <li class="active"><a href="#emailTab" data-toggle="tab">Email Addresses</a></li>
+              <li><a href="#contactTab" data-toggle="tab" id="contabId">Contacts</a></li>
+            </ul>
+            <div class="tab-content">
+                <div id="emailTab" class="tab-pane active">
+                      <div class="form-group">
+                        <br/>
+                        <label for="emailAddressesId">Add Email addresses</label>
+                        
+                         
+                         <textarea class="form-control" rows="40" cols="10" id="emailAddressesId"></textarea>
+                      </div>
+                      <button id="nextBtnId" class="btn btn-primary btn-lg pull-right">Next</button>
+                    
+                </div>
+
+                <div id="contactTab" class="tab-pane">
+                    
+                    <div id="tableDiv"></div>
+
+                </div>
+            
+            </div>       
+        </div>
+    </body> 
+    
+</apex:page>
